@@ -376,6 +376,119 @@ class BackendWorkflowTest extends TestCase
             );
     }
 
+    public function test_laporan_keuangan_can_show_range_period_report(): void
+    {
+        $bendahara = $this->createBendahara();
+        $kategoriMasuk = Kategori::create([
+            'nama_kategori' => 'Iuran Bulanan',
+            'tipe' => 'Masuk',
+            'is_active' => true,
+        ]);
+        $kategoriKeluar = Kategori::create([
+            'nama_kategori' => 'Operasional',
+            'tipe' => 'Keluar',
+            'is_active' => true,
+        ]);
+
+        TransaksiKas::create([
+            'id_kategori' => $kategoriMasuk->getKey(),
+            'id_user' => $bendahara->getKey(),
+            'tgl_transaksi' => '2026-06-10',
+            'jenis_transaksi' => 'Masuk',
+            'jumlah' => 300000,
+            'keterangan' => 'Iuran Juni',
+        ]);
+
+        TransaksiKas::create([
+            'id_kategori' => $kategoriKeluar->getKey(),
+            'id_user' => $bendahara->getKey(),
+            'tgl_transaksi' => '2026-07-15',
+            'jenis_transaksi' => 'Keluar',
+            'jumlah' => 50000,
+            'keterangan' => 'Belanja operasional',
+        ]);
+
+        $this->actingAs($bendahara)
+            ->get(route('laporan-keuangan', [
+                'mode_laporan' => 'rentang',
+                'bulan_mulai' => 6,
+                'tahun_mulai' => 2026,
+                'bulan_selesai' => 7,
+                'tahun_selesai' => 2026,
+            ]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('LaporanKeuangan')
+                ->where('filters.mode_laporan', 'rentang')
+                ->where('periodLabel', 'Juni 2026 - Juli 2026')
+                ->where('summary.total_masuk', 'Rp 300.000')
+                ->where('summary.total_keluar', 'Rp 50.000')
+                ->where('summary.saldo_akhir', 'Rp 250.000')
+                ->where('summary.jumlah_transaksi', 2)
+            );
+    }
+
+    public function test_laporan_keuangan_pdf_can_be_downloaded(): void
+    {
+        $bendahara = $this->createBendahara();
+        $kategori = Kategori::create([
+            'nama_kategori' => 'Iuran Bulanan',
+            'tipe' => 'Masuk',
+            'is_active' => true,
+        ]);
+
+        TransaksiKas::create([
+            'id_kategori' => $kategori->getKey(),
+            'id_user' => $bendahara->getKey(),
+            'tgl_transaksi' => '2026-06-02',
+            'jenis_transaksi' => 'Masuk',
+            'jumlah' => 150000,
+            'keterangan' => 'Setoran warga',
+        ]);
+
+        $this->actingAs($bendahara)
+            ->get(route('laporan-keuangan.export-pdf', [
+                'bulan' => 6,
+                'tahun' => 2026,
+            ]))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf')
+            ->assertHeader('content-disposition', 'attachment; filename="laporan-keuangan-2026-06.pdf"');
+    }
+
+    public function test_kwitansi_pembayaran_pdf_can_be_downloaded(): void
+    {
+        $bendahara = $this->createBendahara();
+        $iuran = $this->createIuran();
+        $warga = $this->createWarga('Budi', 'Blok A / No. 01');
+
+        $tagihan = TagihanWarga::create([
+            'id_warga' => $warga->getKey(),
+            'id_iuran_wajib' => $iuran->getKey(),
+            'bulan' => 6,
+            'tahun' => 2026,
+            'status_bayar' => 'Lunas',
+            'nominal' => 50000,
+            'tanggal_jatuh_tempo' => '2026-06-30',
+            'tanggal_lunas' => '2026-06-10',
+        ]);
+
+        $pembayaran = PembayaranIuran::create([
+            'id_tagihan' => $tagihan->getKey(),
+            'id_user' => $bendahara->getKey(),
+            'tanggal_bayar' => '2026-06-10',
+            'jumlah_bayar' => 50000,
+            'metode_bayar' => 'Tunai',
+            'catatan' => 'Pembayaran uji',
+        ]);
+
+        $this->actingAs($bendahara)
+            ->get(route('pembayaran-iuran.receipt', $pembayaran))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf')
+            ->assertHeader('content-disposition', 'attachment; filename="kwitansi-pembayaran-'.$pembayaran->id_pembayaran.'.pdf"');
+    }
+
     private function createKetuaRt(): User
     {
         return User::factory()->create([

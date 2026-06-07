@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sample PDF Laporan Keuangan E-KASDA</title>
+    <style>
+        :root {
+            --primary: #16213a;
+            --accent: #0b8b78;
+            --surface: #f5f8fb;
+            --border: #d7dce3;
+            --text: #1e293b;
+            --muted: #64748b;
+            --success: #0f9d6e;
+            --danger: #cc3d3d;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 32px 0;
+            background: #eef3f8;
+            color: var(--text);
+            font: 14px/1.6 "Segoe UI", Arial, sans-serif;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 0 auto;
+            background: #ffffff;
+            box-shadow: 0 24px 80px rgba(15, 23, 42, 0.12);
+            padding: 20mm 18mm 18mm;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            align-items: flex-start;
+            padding-bottom: 18px;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .brand {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+        }
+
+        .brand-badge {
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            background: #87efe1;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+        }
+
+        .title {
+            margin: 0;
+            color: var(--primary);
+            font-size: 28px;
+            line-height: 1.2;
+        }
+
+        .subtitle {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .meta {
+            min-width: 220px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px 16px;
+            background: var(--surface);
+        }
+
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 6px;
+        }
+
+        .meta-row:first-child {
+            margin-top: 0;
+        }
+
+        .meta-label {
+            color: var(--muted);
+        }
+
+        .meta-value {
+            font-weight: 700;
+            color: var(--primary);
+            text-align: right;
+        }
+
+        .hero {
+            margin-top: 22px;
+            background: linear-gradient(135deg, var(--primary), #21365f);
+            color: white;
+            border-radius: 18px;
+            padding: 18px 20px;
+        }
+
+        .hero-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            opacity: 0.72;
+            font-weight: 700;
+        }
+
+        .hero-value {
+            margin: 12px 0 0;
+            font-size: 38px;
+            line-height: 1.1;
+            font-weight: 800;
+        }
+
+        .hero-note {
+            margin: 10px 0 0;
+            font-size: 13px;
+            opacity: 0.78;
+        }
+
+        .summary-grid {
+            margin-top: 18px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .summary-card {
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            background: #fff;
+        }
+
+        .summary-card h3 {
+            margin: 0;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            color: var(--muted);
+        }
+
+        .summary-card p {
+            margin: 12px 0 0;
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .summary-card.success p {
+            color: var(--success);
+        }
+
+        .summary-card.danger p {
+            color: var(--danger);
+        }
+
+        .layout {
+            margin-top: 22px;
+            display: grid;
+            grid-template-columns: 1.45fr 0.85fr;
+            gap: 18px;
+        }
+
+        .panel {
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .panel-header {
+            padding: 16px 18px;
+            border-bottom: 1px solid var(--border);
+            background: #fbfcfe;
+        }
+
+        .panel-title {
+            margin: 0;
+            font-size: 18px;
+            color: var(--primary);
+        }
+
+        .panel-subtitle {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: var(--surface);
+        }
+
+        th,
+        td {
+            padding: 12px 14px;
+            border-bottom: 1px solid #edf1f5;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            color: var(--muted);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+        }
+
+        td strong {
+            color: var(--primary);
+        }
+
+        .right {
+            text-align: right;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .badge.success {
+            background: #e8fbf3;
+            color: var(--success);
+        }
+
+        .badge.danger {
+            background: #ffeaea;
+            color: var(--danger);
+        }
+
+        .stack {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .info-card {
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 18px;
+            background: #fff;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 8px 0;
+        }
+
+        .info-row + .info-row {
+            border-top: 1px dashed var(--border);
+        }
+
+        .info-row span:first-child {
+            color: var(--muted);
+        }
+
+        .info-row strong {
+            color: var(--primary);
+        }
+
+        .category-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 14px 18px;
+            border-top: 1px solid #edf1f5;
+        }
+
+        .category-item:first-child {
+            border-top: 0;
+        }
+
+        .category-name {
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .category-note {
+            margin-top: 3px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .footer {
+            margin-top: 22px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="header">
+            <div class="brand">
+                <div class="brand-badge">EK</div>
+                <div>
+                    <h1 class="title">Laporan Keuangan E-KASDA</h1>
+                    <p class="subtitle">RT 01 / RW 06 Ciledug - Rekap kas dan transaksi periode berjalan</p>
+                </div>
+            </div>
+
+            <div class="meta">
+                <div class="meta-row">
+                    <span class="meta-label">Periode</span>
+                    <span class="meta-value">Juni 2026</span>
+                </div>
+                <div class="meta-row">
+                    <span class="meta-label">Tanggal Cetak</span>
+                    <span class="meta-value">06 Juni 2026</span>
+                </div>
+                <div class="meta-row">
+                    <span class="meta-label">Dicetak Oleh</span>
+                    <span class="meta-value">Ketua RT</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="hero">
+            <div class="hero-label">Saldo Akhir Periode</div>
+            <div class="hero-value">Rp 270.000</div>
+            <p class="hero-note">Laporan ini merangkum 12 transaksi yang tercatat pada periode Juni 2026.</p>
+        </div>
+
+        <div class="summary-grid">
+            <div class="summary-card">
+                <h3>Saldo Awal</h3>
+                <p>Rp 270.000</p>
+            </div>
+            <div class="summary-card success">
+                <h3>Total Pemasukan</h3>
+                <p>Rp 390.000</p>
+            </div>
+            <div class="summary-card danger">
+                <h3>Total Pengeluaran</h3>
+                <p>Rp 20.000</p>
+            </div>
+            <div class="summary-card">
+                <h3>Jumlah Transaksi</h3>
+                <p>12</p>
+            </div>
+        </div>
+
+        <div class="layout">
+            <div class="panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">Riwayat Transaksi</h2>
+                    <p class="panel-subtitle">Seluruh debit dan kredit untuk periode Juni 2026</p>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Jenis</th>
+                            <th>Kategori</th>
+                            <th>Keterangan</th>
+                            <th class="right">Debit</th>
+                            <th class="right">Kredit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>31 Mei 2026</td>
+                            <td><span class="badge success">Masuk</span></td>
+                            <td>Iuran Bulanan</td>
+                            <td><strong>Pembayaran bulanan Juni 2026</strong><br />Pembayaran iuran</td>
+                            <td class="right"><strong>Rp 200.000</strong></td>
+                            <td class="right">-</td>
+                        </tr>
+                        <tr>
+                            <td>31 Mei 2026</td>
+                            <td><span class="badge success">Masuk</span></td>
+                            <td>Iuran Lampu Jalan</td>
+                            <td><strong>Pembayaran lampu jalan</strong><br />Pembayaran iuran</td>
+                            <td class="right"><strong>Rp 20.000</strong></td>
+                            <td class="right">-</td>
+                        </tr>
+                        <tr>
+                            <td>30 Mei 2026</td>
+                            <td><span class="badge danger">Keluar</span></td>
+                            <td>Operasional</td>
+                            <td><strong>Biaya kerja bakti</strong><br />Transaksi manual</td>
+                            <td class="right">-</td>
+                            <td class="right"><strong>Rp 20.000</strong></td>
+                        </tr>
+                        <tr>
+                            <td>23 Mei 2026</td>
+                            <td><span class="badge success">Masuk</span></td>
+                            <td>Iuran Bulanan</td>
+                            <td><strong>Pembayaran warga Blok A</strong><br />Pembayaran iuran</td>
+                            <td class="right"><strong>Rp 50.000</strong></td>
+                            <td class="right">-</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="stack">
+                <div class="info-card">
+                    <h2 class="panel-title" style="font-size: 18px; margin: 0 0 10px;">Ringkasan Periode</h2>
+                    <div class="info-row">
+                        <span>Periode Laporan</span>
+                        <strong>Juni 2026</strong>
+                    </div>
+                    <div class="info-row">
+                        <span>Saldo Awal</span>
+                        <strong>Rp 270.000</strong>
+                    </div>
+                    <div class="info-row">
+                        <span>Saldo Akhir</span>
+                        <strong>Rp 270.000</strong>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Komposisi Kategori</h2>
+                        <p class="panel-subtitle">Kategori transaksi paling dominan pada periode ini</p>
+                    </div>
+
+                    <div class="category-item">
+                        <div>
+                            <div class="category-name">Iuran Bulanan</div>
+                            <div class="category-note">6 transaksi masuk</div>
+                        </div>
+                        <span class="badge success">Rp 300.000</span>
+                    </div>
+                    <div class="category-item">
+                        <div>
+                            <div class="category-name">Lampu Jalan</div>
+                            <div class="category-note">2 transaksi masuk</div>
+                        </div>
+                        <span class="badge success">Rp 40.000</span>
+                    </div>
+                    <div class="category-item">
+                        <div>
+                            <div class="category-name">Operasional</div>
+                            <div class="category-note">1 transaksi keluar</div>
+                        </div>
+                        <span class="badge danger">Rp 20.000</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <span>E-KASDA - Sistem Administrasi Kas RT</span>
+            <span>Dokumen ini dihasilkan dari data transaksi kas dan pembayaran iuran yang tercatat.</span>
+        </div>
+    </div>
+</body>
+</html>

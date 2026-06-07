@@ -1,10 +1,12 @@
 type PaymentHistory = {
+    id_pembayaran: number;
     tanggal_bayar: string | null;
     nama_warga?: string;
     nama_iuran: string;
     periode: string;
     jumlah_bayar: string;
     status: string;
+    kwitansi_url: string;
 };
 
 type PaymentHistoryMobileCardProps = {
@@ -42,6 +44,10 @@ export default function PaymentHistoryMobileCard({
                     <p className="ek-mobile-field-value">{row.jumlah_bayar}</p>
                 </div>
             </div>
+
+            <a href={row.kwitansi_url} className="ek-btn-secondary w-full justify-center">
+                Unduh Kwitansi PDF
+            </a>
         </article>
     );
 }

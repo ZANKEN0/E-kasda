@@ -9,10 +9,14 @@ use App\Models\PembayaranIuran;
 use App\Models\TagihanWarga;
 use App\Models\TransaksiKas;
 use App\Models\Warga;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use DomainException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -99,7 +103,7 @@ class PembayaranIuranController extends Controller
                     ->all();
 
                 $history = PembayaranIuran::query()
-                    ->with(['tagihanWarga.iuranWajib'])
+                    ->with(['tagihanWarga.warga', 'tagihanWarga.iuranWajib'])
                     ->whereHas('tagihanWarga', function ($query) use ($resident) {
                         $query->where('id_warga', $resident->id_warga);
                     })
@@ -107,7 +111,9 @@ class PembayaranIuranController extends Controller
                     ->limit(10)
                     ->get()
                     ->map(fn (PembayaranIuran $pembayaran) => [
+                        'id_pembayaran' => $pembayaran->id_pembayaran,
                         'tanggal_bayar' => optional($pembayaran->tanggal_bayar)?->format('d M Y'),
+                        'nama_warga' => $pembayaran->tagihanWarga?->warga?->nama ?? $resident->nama,
                         'nama_iuran' => $pembayaran->tagihanWarga?->iuranWajib?->nama_iuran ?? '-',
                         'periode' => $this->periodLabel(
                             (int) ($pembayaran->tagihanWarga?->bulan ?? 0),
@@ -115,6 +121,7 @@ class PembayaranIuranController extends Controller
                         ),
                         'jumlah_bayar' => $this->formatCurrency((float) $pembayaran->jumlah_bayar),
                         'status' => 'Lunas',
+                        'kwitansi_url' => route('pembayaran-iuran.receipt', $pembayaran),
                     ])
                     ->values()
                     ->all();
@@ -179,6 +186,7 @@ class PembayaranIuranController extends Controller
                 ->limit(10)
                 ->get()
                 ->map(fn (PembayaranIuran $pembayaran) => [
+                    'id_pembayaran' => $pembayaran->id_pembayaran,
                     'tanggal_bayar' => optional($pembayaran->tanggal_bayar)?->format('d M Y'),
                     'nama_warga' => $pembayaran->tagihanWarga?->warga?->nama ?? '-',
                     'nama_iuran' => $pembayaran->tagihanWarga?->iuranWajib?->nama_iuran ?? '-',
@@ -188,6 +196,7 @@ class PembayaranIuranController extends Controller
                     ),
                     'jumlah_bayar' => $this->formatCurrency((float) $pembayaran->jumlah_bayar),
                     'status' => 'Lunas',
+                    'kwitansi_url' => route('pembayaran-iuran.receipt', $pembayaran),
                 ])
                 ->values()
                 ->all();
@@ -329,9 +338,67 @@ class PembayaranIuranController extends Controller
             );
     }
 
+    public function receiptPdf(PembayaranIuran $pembayaranIuran): HttpResponse
+    {
+        $pembayaranIuran->loadMissing([
+            'tagihanWarga.warga',
+            'tagihanWarga.iuranWajib',
+            'user',
+        ]);
+
+        $tagihan = $pembayaranIuran->tagihanWarga;
+        $warga = $tagihan?->warga;
+
+        $html = view('reports.kwitansi-pembayaran-iuran-pdf', [
+            'title' => 'Kwitansi Pembayaran Iuran',
+            'receiptNumber' => 'KWT-'.str_pad((string) $pembayaranIuran->id_pembayaran, 6, '0', STR_PAD_LEFT),
+            'generatedAt' => now()->translatedFormat('d F Y H:i'),
+            'paidAt' => $this->formatReceiptDate($pembayaranIuran->tanggal_bayar),
+            'wargaName' => $warga?->nama ?? '-',
+            'wargaAddress' => $warga?->no_rumah ?? '-',
+            'phoneNumber' => $warga?->no_telepon ?? '-',
+            'iuranName' => $tagihan?->iuranWajib?->nama_iuran ?? '-',
+            'periodLabel' => $this->periodLabel(
+                (int) ($tagihan?->bulan ?? 0),
+                (int) ($tagihan?->tahun ?? 0),
+            ),
+            'paymentMethod' => $pembayaranIuran->metode_bayar,
+            'amount' => $this->formatCurrency((float) $pembayaranIuran->jumlah_bayar),
+            'note' => $pembayaranIuran->catatan,
+            'receivedBy' => $pembayaranIuran->user?->nama_lengkap ?? $pembayaranIuran->user?->name ?? 'Pengurus RT',
+        ])->render();
+
+        $options = new Options();
+        $options->set('isRemoteEnabled', false);
+        $options->set('defaultFont', 'DejaVu Sans');
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html, 'UTF-8');
+        $dompdf->setPaper('A5', 'portrait');
+        $dompdf->render();
+
+        return response($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="kwitansi-pembayaran-'.$pembayaranIuran->id_pembayaran.'.pdf"',
+        ]);
+    }
+
     private function formatCurrency(float $value): string
     {
         return 'Rp '.number_format($value, 0, ',', '.');
+    }
+
+    private function formatReceiptDate(Carbon|string|null $date): string
+    {
+        if (! $date) {
+            return '-';
+        }
+
+        if (is_string($date)) {
+            $date = Carbon::parse($date);
+        }
+
+        return $date->translatedFormat('d F Y');
     }
 
     private function periodLabel(int $month, int $year): string

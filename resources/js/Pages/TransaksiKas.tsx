@@ -317,7 +317,7 @@ export default function TransaksiKas({
                                     Pilih kategori yang sesuai dengan jenis transaksi agar pencatatan kas tetap konsisten.
                                 </p>
                                 <p className="mt-2">
-                                    Upload bukti belum diaktifkan pada tahap ini. Fokus modul sekarang pada pencatatan kas yang rapi dan mudah ditinjau.
+                                    Fokus modul ini pada pencatatan kas yang rapi, ringkas, dan mudah ditinjau kembali saat membuat laporan.
                                 </p>
                             </div>
                         </div>

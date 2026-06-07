@@ -1,0 +1,44 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # ------------------------------------------------------------------
+    # 1. JALUR PRIORITAS
+    # Root domain harus langsung diteruskan ke folder public Laravel.
+    # ------------------------------------------------------------------
+    RewriteRule ^$ public/ [L]
+    RewriteRule ^public/ - [L]
+
+    # ------------------------------------------------------------------
+    # 2. HALAMAN ERROR
+    # Jangan pakai ErrorDocument custom di sini kecuali file-nya benar ada.
+    # Laravel akan menangani error page sendiri.
+    # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # 3. ROUTING DOMAIN UTAMA KE PUBLIC LARAVEL
+    # Semua request web normal kita lempar ke folder public.
+    # ------------------------------------------------------------------
+    RewriteRule ^(favicon\.ico|robots\.txt)$ public/$1 [L,NC]
+
+    # ------------------------------------------------------------------
+    # 4. PROTEKSI FILE SENSITIF
+    # Tutup akses langsung ke file dan folder internal project.
+    # ------------------------------------------------------------------
+    RewriteRule ^(\.env|artisan|composer\.(json|lock)|package(-lock)?\.json|vite\.config\.js|phpunit\.xml|postcss\.config\.js|tailwind\.config\.js|tsconfig\.json)$ - [F,L,NC]
+    RewriteRule ^(app|bootstrap|config|database|docs|lang|resources|routes|storage|tests|vendor)(/.*)?$ - [F,L,NC]
+
+    # ------------------------------------------------------------------
+    # 5. FILE/FOLDER ROOT YANG MEMANG ADA
+    # Layani file root yang aman, selain itu teruskan ke public.
+    # ------------------------------------------------------------------
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+
+    # ------------------------------------------------------------------
+    # 6. FALLBACK SEMUA REQUEST KE PUBLIC
+    # ------------------------------------------------------------------
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+Options -Indexes

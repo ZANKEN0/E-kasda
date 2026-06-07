@@ -1,4 +1,5 @@
 import EkasdaIcon from '@/Components/EkasdaIcon';
+import ReportYearStepper from '@/Components/laporan/ReportYearStepper';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { PageProps } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
@@ -24,8 +25,14 @@ type Pagination = {
 };
 
 type Filters = {
+    mode_laporan: 'bulanan' | 'rentang' | 'tahunan';
     bulan: string;
     tahun: string;
+    bulan_mulai: string;
+    tahun_mulai: string;
+    bulan_selesai: string;
+    tahun_selesai: string;
+    tahun_laporan: string;
 };
 
 type Summary = {
@@ -62,6 +69,7 @@ function paginationNumbers(currentPage: number, lastPage: number): Array<number 
 export default function LaporanKeuangan({
     filters,
     monthOptions,
+    reportModeOptions,
     yearOptions,
     periodLabel,
     summary,
@@ -71,6 +79,7 @@ export default function LaporanKeuangan({
 }: {
     filters: Filters;
     monthOptions: Array<{ value: number; label: string }>;
+    reportModeOptions: Array<{ value: Filters['mode_laporan']; label: string }>;
     yearOptions: number[];
     periodLabel: string;
     summary: Summary;
@@ -81,8 +90,14 @@ export default function LaporanKeuangan({
     const { flash } = usePage<PageProps>().props;
 
     const filterForm = useForm<Filters>({
+        mode_laporan: filters.mode_laporan ?? 'bulanan',
         bulan: filters.bulan ?? '',
         tahun: filters.tahun ?? '',
+        bulan_mulai: filters.bulan_mulai ?? '',
+        tahun_mulai: filters.tahun_mulai ?? '',
+        bulan_selesai: filters.bulan_selesai ?? '',
+        tahun_selesai: filters.tahun_selesai ?? '',
+        tahun_laporan: filters.tahun_laporan ?? '',
     });
 
     const pages = useMemo(
@@ -90,9 +105,29 @@ export default function LaporanKeuangan({
         [pagination.current_page, pagination.last_page],
     );
     const exportUrl = route('laporan-keuangan.export', {
+        mode_laporan: filters.mode_laporan || undefined,
         bulan: filters.bulan || undefined,
         tahun: filters.tahun || undefined,
+        bulan_mulai: filters.bulan_mulai || undefined,
+        tahun_mulai: filters.tahun_mulai || undefined,
+        bulan_selesai: filters.bulan_selesai || undefined,
+        tahun_selesai: filters.tahun_selesai || undefined,
+        tahun_laporan: filters.tahun_laporan || undefined,
     });
+    const exportPdfUrl = route('laporan-keuangan.export-pdf', {
+        mode_laporan: filters.mode_laporan || undefined,
+        bulan: filters.bulan || undefined,
+        tahun: filters.tahun || undefined,
+        bulan_mulai: filters.bulan_mulai || undefined,
+        tahun_mulai: filters.tahun_mulai || undefined,
+        bulan_selesai: filters.bulan_selesai || undefined,
+        tahun_selesai: filters.tahun_selesai || undefined,
+        tahun_laporan: filters.tahun_laporan || undefined,
+    });
+
+    const selectedMode = filterForm.data.mode_laporan;
+    const minYear = Math.min(...yearOptions);
+    const maxYear = Math.max(...yearOptions);
 
     const submitFilters: FormEventHandler = (event) => {
         event.preventDefault();
@@ -100,8 +135,14 @@ export default function LaporanKeuangan({
         router.get(
             route('laporan-keuangan'),
             {
+                mode_laporan: filterForm.data.mode_laporan,
                 bulan: filterForm.data.bulan || undefined,
                 tahun: filterForm.data.tahun || undefined,
+                bulan_mulai: filterForm.data.bulan_mulai || undefined,
+                tahun_mulai: filterForm.data.tahun_mulai || undefined,
+                bulan_selesai: filterForm.data.bulan_selesai || undefined,
+                tahun_selesai: filterForm.data.tahun_selesai || undefined,
+                tahun_laporan: filterForm.data.tahun_laporan || undefined,
             },
             {
                 preserveState: true,
@@ -131,13 +172,22 @@ export default function LaporanKeuangan({
             title="Laporan Keuangan"
             description="Tinjau arus kas per periode, pahami komposisi transaksi, dan siapkan rekap yang siap dibawa ke rapat pengurus RT."
             actions={
-                <a
-                    href={exportUrl}
-                    className="ek-btn-secondary w-full justify-center sm:w-auto"
-                >
-                    <EkasdaIcon name="download" className="h-4 w-4" />
-                    Unduh CSV
-                </a>
+                <>
+                    <a
+                        href={exportPdfUrl}
+                        className="ek-btn-primary w-full justify-center sm:w-auto"
+                    >
+                        <EkasdaIcon name="document" className="h-4 w-4" />
+                        Unduh PDF
+                    </a>
+                    <a
+                        href={exportUrl}
+                        className="ek-btn-secondary w-full justify-center sm:w-auto"
+                    >
+                        <EkasdaIcon name="download" className="h-4 w-4" />
+                        Unduh CSV
+                    </a>
+                </>
             }
         >
             <Head title="Laporan Keuangan" />
@@ -168,49 +218,128 @@ export default function LaporanKeuangan({
                 </section>
 
                 <section className="ek-card p-6">
-                    <h3 className="text-[20px] font-semibold text-[rgb(var(--ek-primary))]">
-                        Filter Laporan
-                    </h3>
-                    <form onSubmit={submitFilters} className="mt-5 space-y-4">
-                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
+                        <h3 className="text-[20px] font-semibold text-[rgb(var(--ek-primary))]">
+                            Filter Laporan
+                        </h3>
+                        <form onSubmit={submitFilters} className="mt-5 space-y-4">
                             <div>
                                 <label className="mb-2 block text-sm font-semibold text-[rgb(var(--ek-primary))]">
-                                    Bulan
+                                    Mode Laporan
                                 </label>
                                 <select
                                     className="ek-input"
-                                    value={filterForm.data.bulan}
-                                    onChange={(event) => filterForm.setData('bulan', event.target.value)}
+                                    value={filterForm.data.mode_laporan}
+                                    onChange={(event) =>
+                                        filterForm.setData('mode_laporan', event.target.value as Filters['mode_laporan'])
+                                    }
                                 >
-                                    {monthOptions.map((option) => (
+                                    {reportModeOptions.map((option) => (
                                         <option key={option.value} value={option.value}>
                                             {option.label}
                                         </option>
                                     ))}
                                 </select>
                             </div>
-                            <div>
-                                <label className="mb-2 block text-sm font-semibold text-[rgb(var(--ek-primary))]">
-                                    Tahun
-                                </label>
-                                <select
-                                    className="ek-input"
-                                    value={filterForm.data.tahun}
-                                    onChange={(event) => filterForm.setData('tahun', event.target.value)}
-                                >
-                                    {yearOptions.map((year) => (
-                                        <option key={year} value={year}>
-                                            {year}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-                        <button type="submit" className="ek-btn-primary w-full justify-center">
-                            Generate Laporan
-                        </button>
-                    </form>
-                </section>
+
+                            {selectedMode === 'bulanan' ? (
+                                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
+                                    <div>
+                                        <label className="mb-2 block text-sm font-semibold text-[rgb(var(--ek-primary))]">
+                                            Bulan
+                                        </label>
+                                        <select
+                                            className="ek-input"
+                                            value={filterForm.data.bulan}
+                                            onChange={(event) => filterForm.setData('bulan', event.target.value)}
+                                        >
+                                            {monthOptions.map((option) => (
+                                                <option key={option.value} value={option.value}>
+                                                    {option.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <ReportYearStepper
+                                        label="Tahun"
+                                        minYear={minYear}
+                                        maxYear={maxYear}
+                                        value={filterForm.data.tahun}
+                                        onChange={(value) => filterForm.setData('tahun', value)}
+                                    />
+                                </div>
+                            ) : null}
+
+                            {selectedMode === 'rentang' ? (
+                                <div className="space-y-4">
+                                    <div className="rounded-2xl border border-[rgb(var(--ek-border))] bg-[rgb(var(--ek-surface-soft))] px-4 py-3 text-sm text-[rgb(var(--ek-text-muted))]">
+                                        Pilih bulan dan tahun awal sampai akhir. Sistem akan menghitung seluruh transaksi di dalam rentang periode tersebut.
+                                    </div>
+                                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
+                                        <div className="rounded-2xl border border-[rgb(var(--ek-border))] bg-white px-4 py-4">
+                                            <p className="text-sm font-semibold text-[rgb(var(--ek-primary))]">Periode Mulai</p>
+                                            <div className="mt-3 space-y-3">
+                                                <select
+                                                    className="ek-input"
+                                                    value={filterForm.data.bulan_mulai}
+                                                    onChange={(event) => filterForm.setData('bulan_mulai', event.target.value)}
+                                                >
+                                                    {monthOptions.map((option) => (
+                                                        <option key={option.value} value={option.value}>
+                                                            {option.label}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <ReportYearStepper
+                                                    label="Tahun Mulai"
+                                                    minYear={minYear}
+                                                    maxYear={maxYear}
+                                                    value={filterForm.data.tahun_mulai}
+                                                    onChange={(value) => filterForm.setData('tahun_mulai', value)}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="rounded-2xl border border-[rgb(var(--ek-border))] bg-white px-4 py-4">
+                                            <p className="text-sm font-semibold text-[rgb(var(--ek-primary))]">Periode Selesai</p>
+                                            <div className="mt-3 space-y-3">
+                                                <select
+                                                    className="ek-input"
+                                                    value={filterForm.data.bulan_selesai}
+                                                    onChange={(event) => filterForm.setData('bulan_selesai', event.target.value)}
+                                                >
+                                                    {monthOptions.map((option) => (
+                                                        <option key={option.value} value={option.value}>
+                                                            {option.label}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <ReportYearStepper
+                                                    label="Tahun Selesai"
+                                                    minYear={minYear}
+                                                    maxYear={maxYear}
+                                                    value={filterForm.data.tahun_selesai}
+                                                    onChange={(value) => filterForm.setData('tahun_selesai', value)}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : null}
+
+                            {selectedMode === 'tahunan' ? (
+                                <ReportYearStepper
+                                    label="Tahun Laporan"
+                                    minYear={minYear}
+                                    maxYear={maxYear}
+                                    value={filterForm.data.tahun_laporan}
+                                    onChange={(value) => filterForm.setData('tahun_laporan', value)}
+                                />
+                            ) : null}
+
+                            <button type="submit" className="ek-btn-primary w-full justify-center">
+                                Tampilkan Laporan
+                            </button>
+                        </form>
+                    </section>
             </div>
 
             <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
@@ -379,7 +508,7 @@ export default function LaporanKeuangan({
                             </div>
                             <div className="rounded-xl border border-dashed border-[rgb(var(--ek-border))] bg-[rgb(var(--ek-surface-soft))] px-4 py-4">
                                 <p className="text-sm leading-6">
-                                    Ekspor PDF belum diaktifkan pada tahap ini. Namun seluruh angka laporan sudah diambil langsung dari transaksi kas dan pembayaran iuran yang tercatat.
+                                    Laporan periode ini bisa langsung diunduh dalam format PDF atau CSV. Nilai saldo, pemasukan, pengeluaran, dan detail transaksi diambil langsung dari transaksi kas dan pembayaran iuran yang tercatat.
                                 </p>
                             </div>
                         </div>

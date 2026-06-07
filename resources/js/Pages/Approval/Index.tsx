@@ -91,6 +91,7 @@ export default function ApprovalIndex({
     const [accountToDelete, setAccountToDelete] = useState<ApprovalAccount | null>(null);
     const [accountToToggleActive, setAccountToToggleActive] = useState<ApprovalAccount | null>(null);
     const [showCleanupConfirmation, setShowCleanupConfirmation] = useState(false);
+    const [showStaleAccountsModal, setShowStaleAccountsModal] = useState(false);
     const [showCreatePassword, setShowCreatePassword] = useState(false);
     const [showCreatePasswordConfirmation, setShowCreatePasswordConfirmation] =
         useState(false);
@@ -128,7 +129,6 @@ export default function ApprovalIndex({
         () => managedAccounts.filter((account) => account.is_approved),
         [managedAccounts],
     );
-    const stalePreview = staleUnverifiedAccounts.slice(0, 3);
 
     useEffect(() => {
         setSearchKeyword(filters.search);
@@ -647,7 +647,7 @@ export default function ApprovalIndex({
                         Sistem hanya akan menghapus akun yang <strong>belum verifikasi</strong> dan sudah lebih dari <strong>{cleanupPolicy.days} hari</strong>.
                     </div>
 
-                    <div className="grid gap-4 md:grid-cols-[0.8fr_1.2fr]">
+                    <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
                         <div className="ek-stat-card">
                             <p className="text-xs font-bold uppercase tracking-[0.16em] text-[rgb(var(--ek-text-muted))]">
                                 Siap Dibersihkan
@@ -662,31 +662,28 @@ export default function ApprovalIndex({
 
                         <div className="rounded-2xl border border-[rgb(var(--ek-border))] bg-white px-4 py-4 sm:px-5">
                             <p className="text-sm font-bold text-[rgb(var(--ek-primary))]">
-                                Contoh akun yang akan dibersihkan
+                                Ringkasan Cepat
+                            </p>
+                            <p className="mt-3 text-sm leading-7 text-[rgb(var(--ek-text-muted))]">
+                                Daftar akun belum terverifikasi disembunyikan dari halaman utama agar area persetujuan tetap ringkas.
+                                Jika perlu mengecek siapa saja yang akan terdampak, buka detail lewat tombol di bawah ini.
                             </p>
 
-                            {stalePreview.length > 0 ? (
-                                <div className="mt-4 space-y-3 text-sm text-[rgb(var(--ek-text-muted))]">
-                                    {stalePreview.map((account) => (
-                                        <div key={account.id_user} className="rounded-xl border border-[rgb(var(--ek-border))] bg-[rgb(var(--ek-surface-soft))] px-4 py-3">
-                                            <p className="font-semibold text-[rgb(var(--ek-primary))]">{account.name}</p>
-                                            <p className="mt-1">{account.email}</p>
-                                            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em]">
-                                                Dibuat {account.created_at || '-'}
-                                            </p>
-                                        </div>
-                                    ))}
-                                    {stats.stale_unverified > stalePreview.length ? (
-                                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[rgb(var(--ek-text-muted))]">
-                                            Dan {stats.stale_unverified - stalePreview.length} akun lainnya
-                                        </p>
-                                    ) : null}
+                            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                                <button
+                                    type="button"
+                                    className="ek-btn-secondary justify-center"
+                                    disabled={stats.stale_unverified === 0}
+                                    onClick={() => setShowStaleAccountsModal(true)}
+                                >
+                                    Lihat Daftar Akun Lama
+                                </button>
+                                <div className="rounded-xl border border-[rgb(var(--ek-border))] bg-[rgb(var(--ek-surface-soft))] px-4 py-3 text-sm font-semibold text-[rgb(var(--ek-text-muted))]">
+                                    {stats.stale_unverified > 0
+                                        ? `${stats.stale_unverified} akun siap ditinjau`
+                                        : 'Belum ada akun yang melewati batas pembersihan'}
                                 </div>
-                            ) : (
-                                <p className="mt-4 text-sm text-[rgb(var(--ek-text-muted))]">
-                                    Belum ada akun yang melewati batas pembersihan.
-                                </p>
-                            )}
+                            </div>
                         </div>
                     </div>
 
@@ -808,6 +805,72 @@ export default function ApprovalIndex({
                 onClose={() => setShowCleanupConfirmation(false)}
                 onConfirm={cleanupUnverifiedAccounts}
             />
+
+            <Modal show={showStaleAccountsModal} onClose={() => setShowStaleAccountsModal(false)}>
+                <div className="p-6">
+                    <div className="flex items-start justify-between gap-4">
+                        <div>
+                            <h2 className="text-lg font-medium text-gray-900">
+                                Akun Belum Verifikasi
+                            </h2>
+                            <p className="mt-2 text-sm leading-7 text-gray-600">
+                                Daftar ini berisi akun yang belum memverifikasi email dan sudah melewati batas {cleanupPolicy.days} hari.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            className="rounded-full p-2 text-[rgb(var(--ek-text-muted))] transition hover:bg-[rgb(var(--ek-surface-soft))]"
+                            onClick={() => setShowStaleAccountsModal(false)}
+                            aria-label="Tutup daftar akun belum verifikasi"
+                        >
+                            <EkasdaIcon name="close" className="h-5 w-5" />
+                        </button>
+                    </div>
+
+                    <div className="mt-5 max-h-[60vh] space-y-3 overflow-y-auto pr-1">
+                        {staleUnverifiedAccounts.length > 0 ? (
+                            staleUnverifiedAccounts.map((account) => (
+                                <div
+                                    key={account.id_user}
+                                    className="rounded-xl border border-[rgb(var(--ek-border))] bg-[rgb(var(--ek-surface-soft))] px-4 py-3"
+                                >
+                                    <p className="font-semibold text-[rgb(var(--ek-primary))]">
+                                        {account.name}
+                                    </p>
+                                    <p className="mt-1 text-sm text-[rgb(var(--ek-text-muted))]">
+                                        {account.email}
+                                    </p>
+                                    <div className="mt-2 flex flex-wrap gap-3 text-xs font-semibold uppercase tracking-[0.12em] text-[rgb(var(--ek-text-muted))]">
+                                        {account.username ? <span>Username: {account.username}</span> : null}
+                                        <span>Dibuat {account.created_at || '-'}</span>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="rounded-2xl border border-dashed border-[rgb(var(--ek-border))] px-4 py-8 text-center text-sm text-[rgb(var(--ek-text-muted))]">
+                                Belum ada akun yang melewati batas pembersihan.
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+                        <SecondaryButton type="button" onClick={() => setShowStaleAccountsModal(false)}>
+                            Tutup
+                        </SecondaryButton>
+                        <button
+                            type="button"
+                            className="inline-flex items-center justify-center rounded-xl border border-[rgba(186,26,26,0.18)] bg-[rgb(var(--ek-danger-bg))] px-5 py-3 text-sm font-semibold text-[rgb(var(--ek-danger))] disabled:cursor-not-allowed disabled:opacity-60"
+                            disabled={stats.stale_unverified === 0}
+                            onClick={() => {
+                                setShowStaleAccountsModal(false);
+                                setShowCleanupConfirmation(true);
+                            }}
+                        >
+                            Bersihkan Akun Lama
+                        </button>
+                    </div>
+                </div>
+            </Modal>
 
             <ConfirmActionModal
                 show={accountToToggleActive !== null}

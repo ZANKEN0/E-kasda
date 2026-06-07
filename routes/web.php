@@ -40,9 +40,11 @@ Route::middleware(['auth', 'active', 'verified', 'approved'])->group(function ()
         Route::get('/tagihan-warga', [TagihanWargaController::class, 'index'])->name('tagihan-warga');
         Route::get('/tagihan-warga/export', [TagihanWargaController::class, 'export'])->name('tagihan-warga.export');
         Route::get('/pembayaran-iuran', [PembayaranIuranController::class, 'index'])->name('pembayaran-iuran');
+        Route::get('/pembayaran-iuran/{pembayaranIuran}/kwitansi', [PembayaranIuranController::class, 'receiptPdf'])->name('pembayaran-iuran.receipt');
         Route::get('/transaksi-kas', [TransaksiKasController::class, 'index'])->name('transaksi-kas');
         Route::get('/laporan-keuangan', [LaporanKeuanganController::class, 'index'])->name('laporan-keuangan');
         Route::get('/laporan-keuangan/export', [LaporanKeuanganController::class, 'export'])->name('laporan-keuangan.export');
+        Route::get('/laporan-keuangan/export-pdf', [LaporanKeuanganController::class, 'exportPdf'])->name('laporan-keuangan.export-pdf');
     });
 
     Route::middleware('role:Ketua_RT')->group(function () {

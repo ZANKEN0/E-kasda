@@ -32,12 +32,14 @@ type ActiveBill = {
 };
 
 type PaymentHistory = {
+    id_pembayaran: number;
     tanggal_bayar: string | null;
     nama_warga?: string;
     nama_iuran: string;
     periode: string;
     jumlah_bayar: string;
     status: string;
+    kwitansi_url: string;
 };
 
 type IuranOption = {
@@ -651,11 +653,11 @@ export default function PembayaranIuran({
                             {paymentForm.errors.bulan ? <p className="text-sm text-[rgb(var(--ek-danger))]">{paymentForm.errors.bulan}</p> : null}
                             {paymentForm.errors.tahun ? <p className="text-sm text-[rgb(var(--ek-danger))]">{paymentForm.errors.tahun}</p> : null}
 
+                            <div className="rounded-lg border border-dashed border-[rgb(var(--ek-border))] bg-[rgb(var(--ek-surface-soft))] px-4 py-4 text-sm leading-6 text-[rgb(var(--ek-text-muted))]">
+                                Kwitansi PDF tersedia setelah pembayaran berhasil disimpan. Anda bisa mengunduhnya langsung dari bagian histori pembayaran.
+                            </div>
+
                             <div className="flex flex-col gap-3 border-t border-[rgb(var(--ek-border))] pt-6 sm:flex-row sm:justify-end">
-                                <button type="button" className="ek-btn-secondary w-full sm:w-auto" disabled>
-                                    <EkasdaIcon name="print" className="h-4 w-4" />
-                                    Cetak Kwitansi
-                                </button>
                                 <button
                                     type="submit"
                                     className="ek-btn-primary w-full sm:w-auto"
@@ -683,7 +685,7 @@ export default function PembayaranIuran({
                             {history.length > 0 ? (
                                 history.map((row, index) => (
                                     <PaymentHistoryMobileCard
-                                        key={`${row.tanggal_bayar}-${row.nama_iuran}-${index}`}
+                                        key={row.id_pembayaran ?? `${row.tanggal_bayar}-${row.nama_iuran}-${index}`}
                                         row={row}
                                         paymentScope={paymentScope}
                                     />
@@ -697,21 +699,22 @@ export default function PembayaranIuran({
                         <div className="hidden overflow-x-auto md:block">
                             <table className="min-w-full text-left">
                                 <thead className="ek-table-header">
-                                    <tr>
-                                        <th className="px-6 py-3">Tanggal</th>
-                                        <th className="px-6 py-3">Jenis Iuran</th>
-                                        <th className="px-6 py-3">Periode</th>
-                                        <th className="px-6 py-3 text-right">Nominal</th>
-                                        <th className="px-6 py-3 text-center">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {history.length > 0 ? (
-                                        history.map((row, index) => (
-                                            <tr key={`${row.tanggal_bayar}-${row.nama_iuran}-${index}`} className="ek-table-row">
-                                                <td className="px-6 py-4 text-[rgb(var(--ek-text-muted))]">{row.tanggal_bayar || '-'}</td>
-                                                <td className="px-6 py-4 font-semibold text-[rgb(var(--ek-primary))]">
-                                                    <div>
+                                        <tr>
+                                            <th className="px-6 py-3">Tanggal</th>
+                                            <th className="px-6 py-3">Jenis Iuran</th>
+                                            <th className="px-6 py-3">Periode</th>
+                                            <th className="px-6 py-3 text-right">Nominal</th>
+                                            <th className="px-6 py-3 text-center">Status</th>
+                                            <th className="px-6 py-3 text-right">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {history.length > 0 ? (
+                                            history.map((row, index) => (
+                                                <tr key={row.id_pembayaran ?? `${row.tanggal_bayar}-${row.nama_iuran}-${index}`} className="ek-table-row">
+                                                    <td className="px-6 py-4 text-[rgb(var(--ek-text-muted))]">{row.tanggal_bayar || '-'}</td>
+                                                    <td className="px-6 py-4 font-semibold text-[rgb(var(--ek-primary))]">
+                                                        <div>
                                                         <p>{row.nama_iuran}</p>
                                                         {paymentScope === 'batch' && row.nama_warga ? (
                                                             <p className="mt-1 text-xs font-medium text-[rgb(var(--ek-text-muted))]">
@@ -722,17 +725,24 @@ export default function PembayaranIuran({
                                                 </td>
                                                 <td className="px-6 py-4 text-[rgb(var(--ek-text-muted))]">{row.periode}</td>
                                                 <td className="px-6 py-4 text-right font-bold">{row.jumlah_bayar}</td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <span className="ek-badge-success">{row.status}</span>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className="ek-badge-success">{row.status}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex justify-end">
+                                                            <a href={row.kwitansi_url} className="ek-btn-secondary px-4 py-2 text-xs">
+                                                                Unduh PDF
+                                                            </a>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan={6} className="px-6 py-10 text-center text-sm text-[rgb(var(--ek-text-muted))]">
+                                                    Belum ada histori pembayaran untuk warga yang dipilih.
                                                 </td>
                                             </tr>
-                                        ))
-                                    ) : (
-                                        <tr>
-                                            <td colSpan={5} className="px-6 py-10 text-center text-sm text-[rgb(var(--ek-text-muted))]">
-                                                Belum ada histori pembayaran untuk warga yang dipilih.
-                                            </td>
-                                        </tr>
                                     )}
                                 </tbody>
                             </table>
